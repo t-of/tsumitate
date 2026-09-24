@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "積立投資シミュレーター — 毎月の積み立て、何年後にいくら",
+  "short_name": "積立シミュレーター",
+  "description": "毎月いくら入れて、年に何 % ふえたら、何年後にいくらになるかを計算する。入れたお金とふえたぶんを分けてグラフにするので、長く続けるほどふえ方が大きくなるのが見て分かる。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3efe6",
+  "theme_color": "#f3efe6",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

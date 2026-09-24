@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3efe6">
+  <meta name="description" content="毎月いくら入れて、年に何 % ふえたら、何年後にいくらになるかを計算する。入れたお金とふえたぶんを分けてグラフにするので、長く続けるほどふえ方が大きくなるのが見て分かる。">
+  <title>積立投資シミュレーター — 毎月の積み立て、何年後にいくら</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="積立投資シミュレーター">
+  <meta property="og:title" content="積立投資シミュレーター — 毎月の積み立て、何年後にいくら">
+  <meta property="og:description" content="毎月いくら入れて、年に何 % ふえたら、何年後にいくらになるかを計算する。入れたお金とふえたぶんを分けてグラフにするので、長く続けるほどふえ方が大きくなるのが見て分かる。">
+  <meta property="og:url" content="https://t-of.github.io/tsumitate/">
+  <meta property="og:image" content="https://t-of.github.io/tsumitate/icons/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- apple-mobile-web-app-status-bar-style は付けない（black-translucent だと iOS 26 で上部が隠れる） -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="積立シミュレーター">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="./webapp-kit/webapp-kit.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="bar">
+      <h1 class="bar__title">積立投資シミュレーター</h1>
+      <button class="icon-btn" id="helpBtn" aria-label="計算のしかた・注意">？</button>
+    </header>
+
+    <section class="result" aria-live="polite">
+      <p class="result__when" id="when">30 年後</p>
+      <p class="result__total"><span id="total">約 583 万円</span> <small>になる計算</small></p>
+      <div class="split" aria-hidden="true"><i class="split__paid" id="barPaid"></i><i class="split__gain" id="barGain"></i></div>
+      <dl class="legend">
+        <div><dt><i class="dot dot--paid"></i>入れたお金</dt><dd id="paid"></dd></div>
+        <div><dt><i class="dot dot--gain"></i>ふえたぶん</dt><dd id="gain"></dd></div>
+      </dl>
+      <p class="note">仮の条件での計算です。将来の成果を約束するものではありません。</p>
+    </section>
+
+    <section class="chart" id="chart" aria-label="年ごとの推移（なぞると途中の年の金額が見られる）">
+      <svg id="svg" role="img" aria-label="年ごとの入れたお金とふえたぶんの積み上げ棒グラフ"></svg>
+    </section>
+
+    <section class="knobs">
+      <div class="knob">
+        <div class="knob__head">
+          <label for="monthly">毎月いくら</label>
+          <span class="knob__value"><input id="monthlyText" class="knob__num" inputmode="numeric" enterkeyhint="done" aria-label="毎月いくら（円）"> 円</span>
+        </div>
+        <div class="knob__ctl">
+          <button class="step" data-knob="monthly" data-dir="-1" aria-label="毎月の額を減らす">−</button>
+          <input type="range" id="monthly" min="0" max="26" step="1">
+          <button class="step" data-knob="monthly" data-dir="1" aria-label="毎月の額を増やす">＋</button>
+        </div>
+      </div>
+      <div class="knob">
+        <div class="knob__head">
+          <label for="rate">年に何 %</label>
+          <span class="knob__value" id="rateText"></span>
+        </div>
+        <div class="knob__ctl">
+          <button class="step" data-knob="rate" data-dir="-1" aria-label="年利を下げる">−</button>
+          <input type="range" id="rate" min="0" max="10" step="0.1">
+          <button class="step" data-knob="rate" data-dir="1" aria-label="年利を上げる">＋</button>
+        </div>
+      </div>
+      <div class="knob">
+        <div class="knob__head">
+          <label for="years">何年</label>
+          <span class="knob__value" id="yearsText"></span>
+        </div>
+        <div class="knob__ctl">
+          <button class="step" data-knob="years" data-dir="-1" aria-label="年数を減らす">−</button>
+          <input type="range" id="years" min="1" max="50" step="1">
+          <button class="step" data-knob="years" data-dir="1" aria-label="年数を増やす">＋</button>
+        </div>
+      </div>
+
+      <div class="small">
+        <label class="small__row">いまの年齢
+          <select id="age"><option value="">未設定</option></select>
+        </label>
+        <label class="small__row">
+          <span>上限 1,800 万円<br><small id="capNote"></small></span>
+          <input type="checkbox" id="cap" class="switch" role="switch">
+        </label>
+      </div>
+    </section>
+
+    <section class="after">
+      <h2>使いはじめたら</h2>
+      <p id="withdraw"></p>
+      <p id="capAt"></p>
+    </section>
+
+    <footer class="credit">
+      <div class="credit__actions">
+        <button class="pill" data-wak="share" id="shareBtn">共有</button>
+        <button class="pill" data-wak="install" hidden>アプリにする</button>
+        <button class="pill" id="soundBtn" aria-pressed="true">音 オン</button>
+      </div>
+      <p><a href="/">T.OF...</a> のアプリ</p>
+    </footer>
+  </main>
+
+  <dialog class="sheet" id="help" aria-labelledby="helpTitle">
+    <form method="dialog" class="sheet__body">
+      <h2 id="helpTitle" tabindex="-1" autofocus>計算のしかた・注意</h2>
+      <h3>使い方</h3>
+      <ol>
+        <li>「毎月いくら」「年に何 %」「何年」のつまみを動かす。動かすとすぐ、何年後にいくらになるかが出る。金額の数字をタップすると、ちょうどの額を入れられる。</li>
+        <li>グラフの下の色が<b class="c-paid">入れたお金</b>、上の色が<b class="c-gain">ふえたぶん</b>。グラフを指でなぞると、途中の年の金額が見られる。</li>
+        <li>「上限 1,800 万円」をオンにすると、入れたお金の合計が 1,800 万円に届いたところで積み立てを止めて計算する（NISA の生涯の枠の目安）。</li>
+      </ol>
+      <h3>計算のしかた</h3>
+      <ul>
+        <li>月利は「年利 ÷ 12」として毎月かけています。お金は月の終わりに入れる計算です。</li>
+        <li>上限に届いたあとは入れずに、ふえるだけの計算です。</li>
+        <li>月 10 万円を超えるぶんは成長投資枠を使う前提です（合計の上限は 1,800 万円のまま）。毎月の額は、今の年間の枠の合計（年 360 万円）に合わせて月 30 万円までにしています。</li>
+        <li>途中で売る・売って枠が戻る・税金・手数料は計算しません。</li>
+        <li>「使いはじめたら」の額は、最後の残高に同じ年利がかかり続けたとして、そのふえたぶんだけを毎月使う場合の目安です。</li>
+      </ul>
+      <h3>注意</h3>
+      <ul>
+        <li>毎月同じ額を入れ、毎月同じ割合でふえると仮定した計算です。実際の値動きは上がり下がりし、入れたお金を下回ることもあります。</li>
+        <li>税金・手数料・物価の上がり下がりは入れていません（税金のかからない口座を想定）。</li>
+        <li>特定の商品や投資のやり方をすすめるものではありません。投資を決めるときは、ご自身で判断してください。</li>
+        <li id="capHelp"></li>
+        <li>「NISA」は日本証券業協会の登録商標です。このアプリは金融庁・日本証券業協会・金融機関とは関係ありません。</li>
+        <li>入れた値はこの端末にだけ保存し、どこにも送りません。</li>
+        <li>この計算を使って生じた損害について、責任を負いません。</li>
+      </ul>
+      <button class="pill sheet__close" value="close">閉じる</button>
+    </form>
+  </dialog>
+
+  <script src="./webapp-kit/webapp-kit.js"></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
