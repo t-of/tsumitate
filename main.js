@@ -128,7 +128,7 @@ document.querySelectorAll('.step').forEach((b) => {
 });
 
 // ---- 表示 ----
-const about = (x) => `約 ${C.yen(x)}`;
+const about = (x) => (x === 0 ? C.yen(x) : `約 ${C.yen(x)}`);   // 0 円のときは「約」を付けない
 const ageOf = (y) => (st.age == null ? '' : `（${st.age + y} 歳）`);
 
 function update() {
@@ -172,12 +172,23 @@ function showYear() {
   $('gain').textContent = about(g);
   $('barPaid').style.flexGrow = String(b ? p / b : 1);
   $('barGain').style.flexGrow = String(b ? g / b : 0);
+  announceResult(y, b);
+}
+
+// スライダーを動かしている間・グラフをなぞっている間は読み上げず、止まってから 1 回だけ短く読ませる
+// （aria-live をつまみの動きのたびに更新すると、動かすたびに読み上げが続いてしまうため）
+let announceTimer = null;
+function announceResult(y, b) {
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => {
+    $('srResult').textContent = `${y} 年後${ageOf(y)}、${about(b)}になる計算`;
+  }, 500);
 }
 
 // ---- グラフ（自前の SVG。年ごとの積み上げ棒） ----
 const svg = $('svg');
 const NS = 'http://www.w3.org/2000/svg';
-const H = 220, PAD = { l: 44, r: 8, t: 22, b: 24 };
+const H = 220, PAD = { r: 8, t: 22, b: 24 };
 let geo = null;   // なぞるときに使う棒の位置
 
 function node(tag, attrs, text) {
@@ -201,23 +212,32 @@ function draw() {
   svg.replaceChildren();
   const n = st.years, top = Math.max(...res.bal) || 1;
   const stepV = niceStep(top), maxV = Math.ceil(top / stepV) * stepV;
-  const pw = W - PAD.l - PAD.r, ph = H - PAD.t - PAD.b;
+  const ticks = [];
+  for (let i = 0; i * stepV <= maxV + 1e-6; i++) ticks.push(i * stepV);
+
+  // 目盛りの文字幅を測り、いちばん長いもの（例: 「600,000」）が切れないよう左の余白を合わせる
+  const probe = node('text', { class: 'tick', x: -999, y: -999 });
+  let maxW = 0;
+  for (const v of ticks) { probe.textContent = manLabel(v); maxW = Math.max(maxW, probe.getComputedTextLength()); }
+  probe.remove();
+  const padL = Math.max(34, Math.ceil(maxW) + 10);
+
+  const pw = W - padL - PAD.r, ph = H - PAD.t - PAD.b;
   const Y = (v) => PAD.t + ph - (v / maxV) * ph;
   const slot = pw / n, bw = Math.max(1, slot * (n > 30 ? 0.72 : 0.62));
-  geo = { x0: PAD.l, slot, n };
+  geo = { x0: padL, slot, n };
 
   // 横の目盛り（万円）
-  for (let i = 0; i * stepV <= maxV + 1e-6; i++) {
-    const v = i * stepV;
-    node('line', { x1: PAD.l, x2: W - PAD.r, y1: Y(v), y2: Y(v), class: v ? 'grid' : 'axis' });
-    node('text', { x: PAD.l - 6, y: Y(v) + 4, class: 'tick', 'text-anchor': 'end' }, manLabel(v));
+  for (const v of ticks) {
+    node('line', { x1: padL, x2: W - PAD.r, y1: Y(v), y2: Y(v), class: v ? 'grid' : 'axis' });
+    node('text', { x: padL - 6, y: Y(v) + 4, class: 'tick', 'text-anchor': 'end' }, manLabel(v));
   }
   node('text', { x: 2, y: 12, class: 'unit' }, '万円');
 
   // 棒（下 = 入れたお金、上 = ふえたぶん）
   const hi = focusYear ?? n;
   for (let y = 1; y <= n; y++) {
-    const x = PAD.l + slot * (y - 0.5) - bw / 2;
+    const x = padL + slot * (y - 0.5) - bw / 2;
     const on = y === hi ? ' is-on' : '';
     node('rect', { x, y: Y(res.paid[y]), width: bw, height: Y(0) - Y(res.paid[y]), class: 'bar-paid' + on });
     node('rect', { x, y: Y(res.bal[y]), width: bw, height: Math.max(0, Y(res.paid[y]) - Y(res.bal[y])), class: 'bar-gain' + on });
@@ -226,13 +246,13 @@ function draw() {
   // 横軸（年後、年齢があれば歳）
   const every = [1, 2, 5, 10].find((k) => n / k <= 6);
   for (let y = every; y <= n; y += every) {
-    node('text', { x: PAD.l + slot * (y - 0.5), y: H - 8, class: 'tick', 'text-anchor': 'middle' }, String(st.age == null ? y : st.age + y));
+    node('text', { x: padL + slot * (y - 0.5), y: H - 8, class: 'tick', 'text-anchor': 'middle' }, String(st.age == null ? y : st.age + y));
   }
   node('text', { x: 2, y: H - 8, class: 'unit' }, st.age == null ? '年後' : '歳');
 
   // 上限に届いた年に点線
   if (res.capMonth != null) {
-    const x = PAD.l + slot * (Math.ceil(res.capMonth / 12) - 0.5);
+    const x = padL + slot * (Math.ceil(res.capMonth / 12) - 0.5);
     node('line', { x1: x, x2: x, y1: PAD.t - 4, y2: Y(0), class: 'cap-line' });
     const right = x > W - 70;
     node('text', { x: right ? x - 4 : x + 4, y: PAD.t - 8, class: 'cap-label', 'text-anchor': right ? 'end' : 'start' }, '上限に届く');

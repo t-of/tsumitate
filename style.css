@@ -26,6 +26,17 @@ button, input, select { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 p { margin: 0; }
 
+/* 画面には出さず、スクリーンリーダーだけに読ませる（結果の読み上げ用） */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 /* 画面の端に置くものはセーフエリアの分だけ内側に。高さは 100vh ではなく 100dvh */
 .app {
   min-height: 100dvh;
@@ -64,17 +75,18 @@ p { margin: 0; }
 /* ---- 結果 ---- */
 .result { display: grid; gap: 8px; }
 .result__when { color: var(--muted); font-size: 15px; }
-.result__total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-#total { font-size: 38px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.result__total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; }
+/* 数字と単位は  （改行しない空白）でつないであるので途中では折り返らない。幅が足りないときは vw で縮む */
+#total { font-size: clamp(22px, 8.5vw, 38px); font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .result__total small { font-size: 15px; color: var(--muted); }
 .split { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--line); }
 .split i { display: block; flex-basis: 0; }
 .split__paid { background: var(--paid); }
 .split__gain { background: var(--gain); }
 .legend { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.legend div { display: grid; gap: 2px; }
+.legend div { display: grid; gap: 2px; min-width: 0; }
 .legend dt { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.legend dd { margin: 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.legend dd { margin: 0; font-size: clamp(13px, 4.5vw, 18px); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .dot--paid { background: var(--paid); }
 .dot--gain { background: var(--gain); }
@@ -91,6 +103,7 @@ p { margin: 0; }
 #svg .grid { stroke: var(--line); stroke-width: 1; }
 #svg .axis { stroke: var(--muted); stroke-width: 1; }
 #svg .tick, #svg .unit { font-size: 11px; fill: var(--muted); }
+#svg .tick { font-variant-numeric: tabular-nums; }
 #svg .bar-paid { fill: var(--paid); opacity: 0.75; }
 #svg .bar-gain { fill: var(--gain); opacity: 0.75; }
 #svg .is-on { opacity: 1; }

@@ -60,20 +60,21 @@ test('上限に届いたあとは入れずにふえるだけ・年ごとに年�
 
 test('取り崩しの目安', () => {
   const r = C.simulate({ monthly: 10_000, rate: 3, years: 30, cap: true });
-  assert.equal(C.yen(r.bal.at(-1)), '583 万円');           // 仕様 §4 の例
-  assert.equal(C.yen(C.withdrawal(r.bal.at(-1), 3)), '14,600 円');
+  assert.equal(C.yen(r.bal.at(-1)), '583 万円');           // 仕様 §4 の例
+  assert.equal(C.yen(C.withdrawal(r.bal.at(-1), 3)), '14,600 円');
   assert.equal(C.withdrawal(1_000_000, 0), 0);
 });
 
-test('金額の表示', () => {
-  assert.equal(C.yen(0), '0 円');
-  assert.equal(C.yen(14_567), '14,600 円');
-  assert.equal(C.yen(99_949), '99,900 円');
-  assert.equal(C.yen(100_000), '10 万円');
-  assert.equal(C.yen(10_079_529), '1,008 万円');
-  assert.equal(C.yen(99_995_000), '1 億円');               // 万に丸めて 1 億になるもの
-  assert.equal(C.yen(123_450_000), '1 億 2,345 万円');
-  assert.equal(C.yen(5_200_010_000), '52 億 1 万円');
+test('金額の表示（数字と単位の間は改行しない空白でつなぎ、途中で折り返さない）', () => {
+  assert.equal(C.yen(0), '0 円');
+  assert.equal(C.yen(14_567), '14,600 円');
+  assert.equal(C.yen(99_949), '99,900 円');
+  assert.equal(C.yen(100_000), '10 万円');
+  assert.equal(C.yen(10_079_529), '1,008 万円');
+  assert.equal(C.yen(99_995_000), '1 億円');               // 万に丸めて 1 億になるもの
+  assert.equal(C.yen(123_450_000), '1 億 2,345 万円');
+  assert.equal(C.yen(5_200_010_000), '52 億 1 万円');
+  assert.ok(!C.yen(123_450_000).includes(' '), '通常の空白（折り返せる）を含まない');
 });
 
 test('毎月の額の入力', () => {
@@ -101,6 +102,15 @@ test('保存した値の確かめ', () => {
   assert.deepEqual(C.sanitize(ok), ok);
   assert.deepEqual(C.sanitize({ v: 1, monthly: 500, rate: 11, years: 0.5, age: 120, cap: 'yes' }), C.DEFAULTS);
   assert.equal(C.sanitize({ ...ok, age: null }).age, null);
+});
+
+test('年齢は 18〜99 歳（NISA は 18 歳から）。範囲の外は未設定に戻す', () => {
+  assert.equal(C.LIMITS.age.min, 18);
+  assert.equal(C.sanitize({ ...C.DEFAULTS, age: 18 }).age, 18);
+  assert.equal(C.sanitize({ ...C.DEFAULTS, age: 17 }).age, null);
+  assert.equal(C.sanitize({ ...C.DEFAULTS, age: 5 }).age, null);
+  assert.equal(C.sanitize({ ...C.DEFAULTS, age: 99 }).age, 99);
+  assert.equal(C.sanitize({ ...C.DEFAULTS, age: 100 }).age, null);
 });
 
 console.log(`${n} 件 ok`);

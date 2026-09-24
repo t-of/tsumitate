@@ -17,7 +17,7 @@ export const LIMITS = {
   monthly: { min: 1_000, max: RULE.monthlyMax },
   rate: { min: 0, max: 10 },
   years: { min: 1, max: 50 },
-  age: { min: 0, max: 99 },
+  age: { min: 18, max: 99 },   // NISA は 18 歳から。保存された値がこれより若ければ未設定に戻す（sanitize）
 };
 export const DEFAULTS = { v: 1, monthly: 10_000, rate: 3, years: 30, age: null, cap: true };
 
@@ -46,12 +46,14 @@ export const withdrawal = (balance, rate) => Math.round(balance * rate / 100 / 1
 const num = (n) => n.toLocaleString('ja-JP');
 
 // 10 万円以上は万円に、1 億円以上は「1 億 2,345 万円」、10 万円未満は 100 円単位（仕様 §3「表示の決まり」）。「約」は付けない
+// 数字と単位の間は改行しない空白（ ）でつなぐ。狭い画面で「1 億」と「8,000 万円」の間で折り返さないように
 export function yen(x) {
-  if (x < 100_000) return `${num(Math.round(x / 100) * 100)} 円`;
+  const nb = ' ';
+  if (x < 100_000) return `${num(Math.round(x / 100) * 100)}${nb}円`;
   const man = Math.round(x / 10_000);
-  if (man < 10_000) return `${num(man)} 万円`;
+  if (man < 10_000) return `${num(man)}${nb}万円`;
   const oku = Math.floor(man / 10_000), rest = man % 10_000;
-  return rest ? `${num(oku)} 億 ${num(rest)} 万円` : `${num(oku)} 億円`;
+  return rest ? `${num(oku)}${nb}億${nb}${num(rest)}${nb}万円` : `${num(oku)}${nb}億円`;
 }
 
 export const capTime = (m) => `${Math.floor(m / 12)} 年 ${m % 12} か月`;

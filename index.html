@@ -37,7 +37,7 @@
       <button class="icon-btn" id="helpBtn" aria-label="計算のしかた・注意">？</button>
     </header>
 
-    <section class="result" aria-live="polite">
+    <section class="result">
       <p class="result__when" id="when">30 年後</p>
       <p class="result__total"><span id="total">約 583 万円</span> <small>になる計算</small></p>
       <div class="split" aria-hidden="true"><i class="split__paid" id="barPaid"></i><i class="split__gain" id="barGain"></i></div>
@@ -47,6 +47,9 @@
       </dl>
       <p class="note">仮の条件での計算です。将来の成果を約束するものではありません。</p>
     </section>
+
+    <!-- つまみを動かしている間は読み上げず、止まってから結果を 1 回だけ短く読ませる（main.js の announceResult） -->
+    <div id="srResult" class="sr-only" aria-live="polite" role="status"></div>
 
     <section class="chart" id="chart" aria-label="年ごとの推移（なぞると途中の年の金額が見られる）">
       <svg id="svg" role="img" aria-label="年ごとの入れたお金とふえたぶんの積み上げ棒グラフ"></svg>
